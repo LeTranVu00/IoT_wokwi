@@ -186,6 +186,9 @@ const unsigned long GATE_CLOSE_DELAY = 3000; // 3 giây
 // Override đèn sân thủ công từ app
 bool manualOutdoorOverride = false;
 
+// HC-SR04 tự động: bật/tắt chế độ auto
+bool gateAutoDetectEnabled = true;
+
 // =========================================
 // WIFI CONNECT
 // =========================================
@@ -415,6 +418,31 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   // =====================================
+  // GATE AUTO-DETECT TOGGLE
+  // =====================================
+
+  else if (topicStr == "smarthome/outdoor/gate/auto") {
+
+    if (message == "ON") {
+      gateAutoDetectEnabled = true;
+      publishMessage(
+        "smarthome/outdoor/gate/auto/status",
+        "ENABLED"
+      );
+      Serial.println("[INFO] Gate auto-detect ENABLED");
+    }
+
+    else if (message == "OFF") {
+      gateAutoDetectEnabled = false;
+      publishMessage(
+        "smarthome/outdoor/gate/auto/status",
+        "DISABLED"
+      );
+      Serial.println("[INFO] Gate auto-detect DISABLED");
+    }
+  }
+
+  // =====================================
   // BUZZER MUTE
   // =====================================
 
@@ -478,6 +506,7 @@ void reconnect() {
       client.subscribe("smarthome/outdoor/light1/control");
 
       client.subscribe("smarthome/outdoor/gate");
+      client.subscribe("smarthome/outdoor/gate/auto");
 
       client.subscribe("smarthome/kitchen/buzzer");
 
@@ -909,8 +938,8 @@ void loop() {
       Serial.println("[INFO] Manual gate override expired.");
     }
 
-    // Auto HC-SR04 chỉ khi không có override thủ công
-    if (!manualGateActive) {
+    // Auto HC-SR04 chỉ khi không có override thủ công VÀ tính năng auto được bật
+    if (!manualGateActive && gateAutoDetectEnabled) {
 
       // --- MỞ CỔNG: khoảng cách < 25cm ---
       if (!gateIsOpen && distance > 0 && distance < 25.0) {
