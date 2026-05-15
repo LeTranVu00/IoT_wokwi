@@ -138,10 +138,10 @@ const unsigned long DEBOUNCE_DELAY = 50;
 // AUTOMATION
 // =========================================
 
-// B. PIR - auto tắt đèn phòng khách sau 10 giây
+// B. PIR - auto tắt đèn phòng khách sau 5 giây
 unsigned long pirTriggerTime = 0;
 bool pirAutoOn = false;
-const unsigned long PIR_TIMEOUT = 10000; // 10 giây
+const unsigned long PIR_TIMEOUT = 5000; // 5 giây
 
 // C. Gas threshold
 const int GAS_THRESHOLD = 2000;
