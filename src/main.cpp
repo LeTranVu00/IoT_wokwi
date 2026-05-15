@@ -171,8 +171,8 @@ String lastGateCmd = "";
 bool gateIsOpen = false;
 
 // Hysteresis: mở khi < OPEN_DIST, đóng khi > CLOSE_DIST
-const float GATE_OPEN_DIST  = 20.0;  // cm - có vật → mở
-const float GATE_CLOSE_DIST = 25.0;  // cm - không còn vật → đóng
+const float GATE_OPEN_DIST  = 25.0;  // cm - có vật → mở
+const float GATE_CLOSE_DIST = 30.0;  // cm - không còn vật → đóng
 
 // Servo angles for open/close (degrees)
 // NOTE: self-test ends at 90° → dùng 0° = MỞ để chuyển động rõ ràng
@@ -941,8 +941,8 @@ void loop() {
     // Auto HC-SR04 chỉ khi không có override thủ công VÀ tính năng auto được bật
     if (!manualGateActive && gateAutoDetectEnabled) {
 
-      // --- MỞ CỔNG: khoảng cách < 25cm ---
-      if (!gateIsOpen && distance > 0 && distance < 25.0) {
+      // --- MỞ CỔNG: khoảng cách < GATE_OPEN_DIST (20cm) ---
+      if (!gateIsOpen && distance > 0 && distance < GATE_OPEN_DIST) {
 
         gateIsOpen = true;
         distanceAboveThresholdSince = 0; // reset timer đóng
@@ -951,18 +951,22 @@ void loop() {
         Serial.println(") -> OPEN");
         gateServo.write(GATE_OPEN_ANGLE); // 0°
         publishMessage("smarthome/outdoor/gate/status", "OPEN");
-        Serial.println("[AUTO] Gate OPEN (distance < 25cm) -> servo 0 deg");
+        Serial.print("[AUTO] Gate OPEN (distance < ");
+        Serial.print(GATE_OPEN_DIST);
+        Serial.println("cm) -> servo 0 deg");
 
       }
 
-      // --- ĐÓNG CỔNG: khoảng cách >= 25cm, chờ 3 giây ---
+      // --- ĐÓNG CỔNG: khoảng cách >= GATE_CLOSE_DIST (25cm), chờ 3 giây ---
       else if (gateIsOpen) {
 
-        if (distance >= 25.0 || distance == 0) {
+        if (distance >= GATE_CLOSE_DIST || distance == 0) {
           // Bắt đầu / tiếp tục đếm timer
           if (distanceAboveThresholdSince == 0) {
             distanceAboveThresholdSince = now;
-            Serial.println("[AUTO] distance >= 25cm: bat dau dem 3s de dong cong...");
+            Serial.print("[AUTO] distance >= ");
+            Serial.print(GATE_CLOSE_DIST);
+            Serial.println("cm: bat dau dem 3s de dong cong...");
           }
 
           // Đủ 3 giây → đóng cổng
@@ -978,9 +982,11 @@ void loop() {
           }
 
         } else {
-          // Khoảng cách về lại < 25cm → huỷ timer đóng
+          // Khoảng cách về lại < GATE_CLOSE_DIST (25cm) → huỷ timer đóng
           if (distanceAboveThresholdSince != 0) {
-            Serial.println("[AUTO] Close cancelled: distance < 25cm tro lai");
+            Serial.println("[AUTO] Close cancelled: distance < ");
+            Serial.print(GATE_CLOSE_DIST);
+            Serial.println("cm tro lai");
             distanceAboveThresholdSince = 0;
           }
         }
