@@ -157,10 +157,10 @@ const int LDR_DARK_THRESHOLD = 500;
 // Tắt còi báo từ app (reset khi gas về an toàn)
 bool buzzerMuted = false;
 
-// Override cổng thủ công từ app (30 giây)
+// Override cổng thủ công từ app (10 giây)
 bool manualGateActive = false;
 unsigned long manualGateTime = 0;
-const unsigned long MANUAL_GATE_TIMEOUT = 30000;
+const unsigned long MANUAL_GATE_TIMEOUT = 10000;
 
 // Chống lệnh cổng rác gửi lại sau khi reconnect
 unsigned long lastGateCmdTime = 0;
@@ -170,16 +170,16 @@ String lastGateCmd = "";
 // Trạng thái cổng hiện tại (tránh ghi servo & publish liên tục)
 bool gateIsOpen = false;
 
-// Hysteresis: mở khi < OPEN_DIST, đóng khi > CLOSE_DIST
-const float GATE_OPEN_DIST  = 25.0;  // cm - có vật → mở
-const float GATE_CLOSE_DIST = 30.0;  // cm - không còn vật → đóng
+// Hysteresis: mở khi < OPEN_DIST (gần), đóng khi >= CLOSE_DIST (xa)
+const float GATE_OPEN_DIST  = 40.0;  // cm - có vật gần → mở
+const float GATE_CLOSE_DIST = 50.0;  // cm - vật xa → đóng
 
 // Servo angles for open/close (degrees)
 // NOTE: self-test ends at 90° → dùng 0° = MỞ để chuyển động rõ ràng
 const int GATE_OPEN_ANGLE  = 0;  // mở cửa: về 0°
 const int GATE_CLOSE_ANGLE = 90; // đóng cửa: xoay 90°
 
-// Timer: bắt đầu đếm khi distance > 25cm, đủ 3s thì đóng
+// Timer: bắt đầu đếm khi distance >= 50cm, đủ 3s thì đóng
 unsigned long distanceAboveThresholdSince = 0;
 const unsigned long GATE_CLOSE_DELAY = 3000; // 3 giây
 
@@ -941,7 +941,7 @@ void loop() {
     // Auto HC-SR04 chỉ khi không có override thủ công VÀ tính năng auto được bật
     if (!manualGateActive && gateAutoDetectEnabled) {
 
-      // --- MỞ CỔNG: khoảng cách < GATE_OPEN_DIST (20cm) ---
+      // --- MỞ CỔNG: khoảng cách < GATE_OPEN_DIST (40cm) ---
       if (!gateIsOpen && distance > 0 && distance < GATE_OPEN_DIST) {
 
         gateIsOpen = true;
@@ -953,11 +953,11 @@ void loop() {
         publishMessage("smarthome/outdoor/gate/status", "OPEN");
         Serial.print("[AUTO] Gate OPEN (distance < ");
         Serial.print(GATE_OPEN_DIST);
-        Serial.println("cm) -> servo 0 deg");
+        Serial.println("cm) -> servo 0°");
 
       }
 
-      // --- ĐÓNG CỔNG: khoảng cách >= GATE_CLOSE_DIST (25cm), chờ 3 giây ---
+      // --- ĐÓNG CỔNG: khoảng cách >= GATE_CLOSE_DIST (50cm), chờ 3 giây ---
       else if (gateIsOpen) {
 
         if (distance >= GATE_CLOSE_DIST || distance == 0) {
@@ -978,7 +978,7 @@ void loop() {
             Serial.println(") -> CLOSE");
             gateServo.write(GATE_CLOSE_ANGLE); // 90°
             publishMessage("smarthome/outdoor/gate/status", "CLOSE");
-            Serial.println("[AUTO] Gate CLOSED (distance >= 25cm kept 3s) -> servo 90 deg");
+            Serial.println("[AUTO] Gate CLOSED (distance >= 50cm kept 3s) -> servo 90°");
           }
 
         } else {
